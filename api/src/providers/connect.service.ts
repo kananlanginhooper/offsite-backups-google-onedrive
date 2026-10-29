@@ -72,8 +72,11 @@ export class ConnectService {
     for (const key of ['client_id', 'client_secret', 'scope'])
       if (settings[key]) app[key] = settings[key];
     const args = ['authorize', BACKEND[id]];
+    // rclone reads this blob as standard base64 without '=' padding (padding fails to decode)
     if (Object.keys(app).length)
-      args.push(Buffer.from(JSON.stringify(app)).toString('base64'));
+      args.push(
+        Buffer.from(JSON.stringify(app)).toString('base64').replace(/=+$/, ''),
+      );
     args.push('--auth-no-open-browser');
 
     const child = this.rclone.start(args);
