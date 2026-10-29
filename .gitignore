@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+private/
+local/
+restores/
+*.log
+api/src/generated/
+ui/.angular/

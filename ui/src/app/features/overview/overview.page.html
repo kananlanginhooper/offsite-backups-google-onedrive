@@ -1,0 +1,22 @@
+<section class="providers">
+  @for (p of providers(); track p.id) {
+    <app-provider-card [provider]="p" [checking]="checking() === p.id" (checkSpace)="checkSpace(p.id)" />
+  }
+</section>
+
+<section class="tiles">
+  <app-stat-tile label="Files offsite" [value]="count(allFiles())" note="verified copies, all providers" />
+  <app-stat-tile label="Bytes offsite" [value]="bytes(allBytes())" />
+  @for (t of totals(); track t.provider) {
+    <div class="total">
+      <app-provider-chip [provider]="t.provider" />
+      <b>{{ count(t.files) }}</b> files · {{ bytes(t.bytes) }}
+      <span class="muted">last verified {{ ago(t.lastVerifiedAt) }}</span>
+    </div>
+  }
+</section>
+
+<section class="card">
+  <h3>Verified per day (last 90 days)</h3>
+  <app-daily-chart [rows]="daily()" />
+</section>

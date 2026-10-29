@@ -1,0 +1,815 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "HealthController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/config": {
+      "get": {
+        "operationId": "AppConfigController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UiConfigDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/api/providers": {
+      "get": {
+        "operationId": "ProvidersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/api/providers/{id}/space": {
+      "post": {
+        "operationId": "ProvidersController_checkSpace",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "gdrive",
+                "onedrive"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpaceDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "providers"
+        ]
+      },
+      "get": {
+        "operationId": "ProvidersController_spaceHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "gdrive",
+                "onedrive"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpaceDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/api/copies": {
+      "get": {
+        "operationId": "CopiesController_page",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gdrive",
+                "gphotos",
+                "onedrive"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "hash prefix or part of the remote path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopyPageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "copies"
+        ]
+      }
+    },
+    "/api/copies/totals": {
+      "get": {
+        "operationId": "CopiesController_totals",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderTotalsDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "copies"
+        ]
+      }
+    },
+    "/api/copies/daily": {
+      "get": {
+        "operationId": "CopiesController_daily",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyTotalsDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "copies"
+        ]
+      }
+    },
+    "/api/copies/{id}": {
+      "get": {
+        "operationId": "CopiesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopyDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "copies"
+        ]
+      }
+    },
+    "/api/restores": {
+      "get": {
+        "operationId": "RestoresController_recent",
+        "parameters": [
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RestoreDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "restores"
+        ]
+      },
+      "post": {
+        "operationId": "RestoresController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRestoreDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "restores"
+        ]
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "operationId": "JobsController_recent",
+        "parameters": [
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobRunDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "jobs"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Offsite backups",
+    "description": "Track, save and restore offsite copies on Google Drive and OneDrive",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "LoginConfigDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "issuer",
+          "clientId"
+        ]
+      },
+      "UiConfigDto": {
+        "type": "object",
+        "properties": {
+          "apiBase": {
+            "type": "string",
+            "example": "api"
+          },
+          "basePath": {
+            "type": "string",
+            "example": "/"
+          },
+          "publicUrl": {
+            "type": "string"
+          },
+          "frameParents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "login": {
+            "$ref": "#/components/schemas/LoginConfigDto"
+          }
+        },
+        "required": [
+          "apiBase",
+          "basePath",
+          "publicUrl",
+          "frameParents",
+          "login"
+        ]
+      },
+      "SpaceDto": {
+        "type": "object",
+        "properties": {
+          "takenAt": {
+            "type": "string"
+          },
+          "totalBytes": {
+            "type": "number",
+            "nullable": true
+          },
+          "usedBytes": {
+            "type": "number",
+            "nullable": true
+          },
+          "freeBytes": {
+            "type": "number",
+            "nullable": true
+          },
+          "trashedBytes": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "takenAt",
+          "totalBytes",
+          "usedBytes",
+          "freeBytes",
+          "trashedBytes"
+        ]
+      },
+      "ProviderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "gdrive",
+              "onedrive"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "remote": {
+            "type": "string",
+            "description": "rclone remote name; empty when not set up"
+          },
+          "space": {
+            "nullable": true,
+            "description": "latest space check",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpaceDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "remote",
+          "space"
+        ]
+      },
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
+      "CopyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "hash": {
+            "type": "string",
+            "description": "sha256 of the content"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "gdrive",
+              "gphotos",
+              "onedrive"
+            ]
+          },
+          "remotePath": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number",
+            "nullable": true
+          },
+          "placedBy": {
+            "type": "string"
+          },
+          "verifiedBy": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "hash",
+          "provider",
+          "remotePath",
+          "size",
+          "placedBy",
+          "verifiedBy",
+          "verifiedAt"
+        ]
+      },
+      "CopyPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CopyDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "ProviderTotalsDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "gdrive",
+              "gphotos",
+              "onedrive"
+            ]
+          },
+          "files": {
+            "type": "number"
+          },
+          "bytes": {
+            "type": "number"
+          },
+          "lastVerifiedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "provider",
+          "files",
+          "bytes",
+          "lastVerifiedAt"
+        ]
+      },
+      "DailyTotalsDto": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "example": "2026-10-28"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "gdrive",
+              "gphotos",
+              "onedrive"
+            ]
+          },
+          "files": {
+            "type": "number"
+          },
+          "bytes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "day",
+          "provider",
+          "files",
+          "bytes"
+        ]
+      },
+      "RestoreDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "gdrive",
+              "gphotos",
+              "onedrive"
+            ]
+          },
+          "hash": {
+            "type": "string",
+            "nullable": true
+          },
+          "remotePath": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string",
+            "description": "where the file lands on the server"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "requestedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "bytes": {
+            "type": "number",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "hash",
+          "remotePath",
+          "destination",
+          "status",
+          "requestedAt",
+          "finishedAt",
+          "bytes",
+          "error"
+        ]
+      },
+      "CreateRestoreDto": {
+        "type": "object",
+        "properties": {
+          "copyId": {
+            "type": "number",
+            "description": "id of the offsite copy to bring back"
+          }
+        },
+        "required": [
+          "copyId"
+        ]
+      },
+      "JobRunDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "gdrive",
+              "gphotos",
+              "onedrive"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "push",
+              "restore",
+              "verify",
+              "space"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "filesTotal": {
+            "type": "number",
+            "nullable": true
+          },
+          "filesDone": {
+            "type": "number"
+          },
+          "bytesTotal": {
+            "type": "number",
+            "nullable": true
+          },
+          "bytesDone": {
+            "type": "number"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "kind",
+          "status",
+          "startedAt",
+          "finishedAt",
+          "filesTotal",
+          "filesDone",
+          "bytesTotal",
+          "bytesDone",
+          "message"
+        ]
+      }
+    }
+  }
+}
