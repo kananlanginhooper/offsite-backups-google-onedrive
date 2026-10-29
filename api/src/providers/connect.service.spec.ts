@@ -112,6 +112,7 @@ describe('ConnectService', () => {
     expect(start.redirectUri).toBe('http://127.0.0.1:53682/');
     const args = (rclone.start.mock.calls[0] as string[][])[0];
     expect(args.slice(0, 2)).toEqual(['authorize', 'drive']);
+    expect(args[2]).not.toMatch(/=/); // rclone refuses padded base64
     expect(JSON.parse(Buffer.from(args[2], 'base64').toString())).toEqual({
       client_id: 'cid',
       client_secret: 'cs',
