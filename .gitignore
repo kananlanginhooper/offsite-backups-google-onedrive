@@ -5,7 +5,9 @@ dist/
 !.env.example
 private/
 local/
-restores/
+# restored files land here in laptop dev (RESTORE_ROOT=./restores); not the restores feature code
+/restores/
+/api/restores/
 *.log
 api/src/generated/
 ui/.angular/
