@@ -1,13 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AppConfig } from '../config/app-config.service';
 import { AppDb } from '../prisma/app-db.service';
-import { RcloneService } from '../rclone/rclone.service';
+import { RcloneAbout, RcloneService } from '../rclone/rclone.service';
 import { num } from '../common/bigint';
 import { PROVIDER_LABELS } from '../common/providers';
 import { SpaceSnapshot } from '../generated/app/client';
-import { ProviderDto, SpaceDto } from './dto/provider.dto';
+import { ProviderDto, SpaceDto, SpaceErrorDto } from './dto/provider.dto';
 
 type RemoteProvider = ProviderDto['id'];
+
+/** rclone's failure text -> what the owner needs to do about it. */
+const REASONS: [RegExp, string][] = [
+  [
+    /invalid_grant|token.*expired|couldn't fetch token/i,
+    'Signed out: the sign-in expired. Reconnect the remote.',
+  ],
+  [
+    /didn't find section in config/i,
+    'Not signed in yet: the remote is not set up in rclone.',
+  ],
+  [/ENOENT/, 'rclone is not installed where this app runs.'],
+  [
+    /quota|rateLimit|429/i,
+    'The provider is rate-limiting requests. Try again later.',
+  ],
+];
+
+function explain(detail: string): string {
+  return (
+    REASONS.find(([re]) => re.test(detail))?.[1] ?? 'The space check failed.'
+  );
+}
 
 const toSpace = (s: SpaceSnapshot): SpaceDto => ({
   takenAt: s.takenAt.toISOString(),
@@ -19,6 +42,9 @@ const toSpace = (s: SpaceSnapshot): SpaceDto => ({
 
 @Injectable()
 export class ProvidersService {
+  /** The last failed space check per provider, until the next good one. Kept in memory: it's a status, not history. */
+  private readonly errors = new Map<RemoteProvider, SpaceErrorDto>();
+
   constructor(
     private readonly config: AppConfig,
     private readonly db: AppDb,
@@ -52,14 +78,27 @@ export class ProvidersService {
               ? this.config.get('GDRIVE_REMOTE')
               : this.config.get('ONEDRIVE_REMOTE'),
           space: latest ? toSpace(latest) : null,
+          lastError: this.errors.get(id) ?? null,
         };
       }),
     );
   }
 
-  /** Ask the provider how much space is used and free, and keep the answer. */
+  /** Ask the provider how much space is used and free, and keep the answer. A failure is kept as lastError. */
   async checkSpace(id: RemoteProvider): Promise<SpaceDto> {
-    const about = await this.rclone.about(this.remoteFor(id));
+    let about: RcloneAbout;
+    try {
+      about = await this.rclone.about(this.remoteFor(id));
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      this.errors.set(id, {
+        at: new Date().toISOString(),
+        reason: explain(detail),
+        detail,
+      });
+      throw e;
+    }
+    this.errors.delete(id);
     const snap = await this.db.spaceSnapshot.create({
       data: {
         provider: id,

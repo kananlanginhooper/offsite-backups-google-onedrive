@@ -18,5 +18,9 @@
 
 <section class="card">
   <h3>Verified per day (last 90 days)</h3>
-  <app-daily-chart [rows]="daily()" />
+  @if (loaded()) {
+    <app-daily-chart [rows]="daily()" />
+  } @else {
+    <p class="muted">Loading…</p>
+  }
 </section>

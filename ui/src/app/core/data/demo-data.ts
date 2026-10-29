@@ -111,8 +111,8 @@ export class DemoData extends OffsiteData {
 
   async providers(): Promise<Provider[]> {
     return [
-      { id: 'gdrive', label: 'Google Drive', remote: 'gdrive-demo', space: this.space.gdrive },
-      { id: 'onedrive', label: 'OneDrive', remote: 'onedrive-demo', space: this.space.onedrive },
+      { id: 'gdrive', label: 'Google Drive', remote: 'gdrive-demo', space: this.space.gdrive, lastError: null },
+      { id: 'onedrive', label: 'OneDrive', remote: 'onedrive-demo', space: this.space.onedrive, lastError: null },
     ];
   }
 

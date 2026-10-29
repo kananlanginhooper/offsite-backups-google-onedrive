@@ -11,6 +11,14 @@
 
 @if (!provider().remote) {
   <p class="muted">Not set up: no rclone remote configured.</p>
+} @else if (provider().lastError; as err) {
+  <p class="error" [title]="err.detail"><mat-icon>error_outline</mat-icon> {{ err.reason }}</p>
+  <div class="muted">
+    Checked {{ ago(err.at) }}
+    @if (space(); as s) {
+      · last good check {{ ago(s.takenAt) }}: {{ bytes(s.freeBytes) }} free
+    }
+  </div>
 } @else if (space(); as s) {
   <mat-progress-bar mode="determinate" [value]="usedPct()" />
   <div class="row">

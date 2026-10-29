@@ -501,6 +501,27 @@
           "trashedBytes"
         ]
       },
+      "SpaceErrorDto": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "description": "why the check failed, in plain words"
+          },
+          "detail": {
+            "type": "string",
+            "description": "rclone's own last line"
+          }
+        },
+        "required": [
+          "at",
+          "reason",
+          "detail"
+        ]
+      },
       "ProviderDto": {
         "type": "object",
         "properties": {
@@ -527,13 +548,24 @@
                 "$ref": "#/components/schemas/SpaceDto"
               }
             ]
+          },
+          "lastError": {
+            "nullable": true,
+            "description": "the last space check, when it failed after the latest good one",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpaceErrorDto"
+              }
+            ]
           }
         },
         "required": [
           "id",
           "label",
           "remote",
-          "space"
+          "space",
+          "lastError"
         ]
       },
       "Object": {
