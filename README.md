@@ -17,6 +17,7 @@ A dashboard to track, save and restore offsite copies of a home file library on 
   - **The catalogue database (MySQL, read-only):** its `offsite_copy` table records every copy, keyed by the file's sha256. The push jobs write it, and it's the source of truth for what's offsite.
   - **This app's own database (Postgres):** job runs, restore requests and space snapshots.
   - It also serves the built UI, with `<base href>` set from `UI_BASE_PATH` at request time, plus `GET /api/config`. It sends `Content-Security-Policy: frame-ancestors` from `FRAME_ANCESTORS`, so the app can be framed by a dashboard shell.
+- **`pusher/`**: the Google Drive and OneDrive push jobs (Python + rclone), configured from the same `.env`. See `pusher/README.md`.
 - **`ui/`**: Angular 20. It uses standalone OnPush components with signals, Angular Material, Apache ECharts (`ngx-echarts`), and a flat `core/ shared/ features/` layout. The API types are generated from the back end's OpenAPI (`npm run api-types`).
 - **Pages demo:** the `demo` build swaps the data source (`core/data/mode.ts` → `mode.demo.ts`) for made-up data kept in the browser, and writes to `docs/`.
 

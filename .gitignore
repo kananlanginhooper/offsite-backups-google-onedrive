@@ -9,3 +9,5 @@ restores/
 *.log
 api/src/generated/
 ui/.angular/
+/pusher/__pycache__/
+/pusher/logs/
