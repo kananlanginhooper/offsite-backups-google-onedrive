@@ -6,7 +6,8 @@ services:
     build: .
     env_file: .env
     ports:
-      - "${PORT:-8101}:${PORT:-8101}"
+      # one IPv4 address only: a bare "port:port" also binds [::]
+      - "${BIND_ADDR:-127.0.0.1}:${PORT:-8101}:${PORT:-8101}"
     volumes:
       # read-only: the push jobs share this rclone.conf, so the app never rewrites their sign-in tokens
       - ${RCLONE_CONFIG_DIR}:/config/rclone:ro
