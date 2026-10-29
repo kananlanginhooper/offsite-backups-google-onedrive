@@ -29,4 +29,4 @@ cd ui && npm install && npm run api-types && npm start       # ng serve, proxies
 cd ui && npm run build:demo                                  # Pages demo -> docs/
 ```
 
-All settings come from `.env` (see `.env.example`). `docker compose up -d --build` runs the API and UI as one container.
+All settings come from `.env` (see `.env.example`). `docker compose up -d --build` runs the API and UI as one container on the shared external Docker network `homelab`, created once per host (`docker network create --subnet <shared subnet> homelab`). The rclone config folder is mounted read-only.
