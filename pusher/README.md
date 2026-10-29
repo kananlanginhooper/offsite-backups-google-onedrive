@@ -29,4 +29,9 @@ Each optional gate checks that its table exists first, so a table that hasn't be
 
 The `PUSH_*`, `GDRIVE_*`, `ONEDRIVE_*` and `RECOVERY_DB_*` keys in `.env.example`. Batch definitions go in the JSON file named by `PUSH_BATCHES_FILE` (shaped like `batches.example.json`), kept out of git.
 
-Requires Python 3.10+ with `pymysql`, and rclone with the remotes signed in.
+Requires Python 3.9+ with `pymysql`, and rclone with the remotes signed in.
+
+## Checks
+
+- `python pusher/tests/test_gates.py -v`: mock-only tests. The real gate SQL runs against an in-memory SQLite database, with a fake rclone, no network and no real data. They show a private, flagged, excluded, sensitive-category or already-offsite file is never handed to rclone or recorded, and that nothing uploads while the Takeout index is incomplete. Removing a gate makes them fail.
+- `python pusher/tools/gate_diff.py --live <copy of the live job folders> --env <private live settings> --out docs/gate-diff.md`: runs the live jobs and this port against the same recording fake database and compares every statement they send. The report masks every library-specific value. Latest result: [docs/gate-diff.md](../docs/gate-diff.md).
