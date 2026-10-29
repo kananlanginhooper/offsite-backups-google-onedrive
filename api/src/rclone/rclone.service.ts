@@ -46,7 +46,7 @@ export class RcloneService {
       child.on('close', (code) =>
         code === 0
           ? resolve(out)
-          : reject(fail(`exit ${code}: ${lastLine(err)}`)),
+          : reject(fail(`exit ${code}: ${oneLine(err)}`)),
       );
     });
   }
@@ -57,6 +57,13 @@ function root(remote: string): string {
   return remote.endsWith(':') ? remote : `${remote}:`;
 }
 
-function lastLine(text: string): string {
-  return text.trim().split('\n').pop() ?? '';
+/** rclone's error as one line. Its log line is often followed by a multi-line JSON reply
+ *  (e.g. an OAuth "invalid_grant"), so the whole output is kept, minus the timestamps. */
+function oneLine(text: string): string {
+  return text
+    .split('\n')
+    .map((l) => l.replace(/^\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d /, '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .slice(0, 600);
 }
