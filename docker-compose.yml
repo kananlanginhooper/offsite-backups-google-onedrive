@@ -1,4 +1,6 @@
 # The API + UI. No database service: it uses the existing databases named in .env.
+# Joins the shared external network "homelab" that every home-project container uses
+# (created once per host with the subnet from the shared dev standard).
 services:
   offsite:
     build: .
@@ -6,6 +8,12 @@ services:
     ports:
       - "${PORT:-8101}:${PORT:-8101}"
     volumes:
-      - ${RCLONE_CONFIG_DIR}:/config/rclone
+      # read-only: the push jobs share this rclone.conf, so the app never rewrites their sign-in tokens
+      - ${RCLONE_CONFIG_DIR}:/config/rclone:ro
       - ${RESTORE_HOST_DIR}:/restores
     restart: unless-stopped
+
+networks:
+  default:
+    name: homelab
+    external: true
