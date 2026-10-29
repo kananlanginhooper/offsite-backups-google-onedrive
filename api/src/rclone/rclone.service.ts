@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { spawn } from 'node:child_process';
 import { AppConfig } from '../config/app-config.service';
 
@@ -15,7 +15,7 @@ export class RcloneService {
   constructor(private readonly config: AppConfig) {}
 
   about(remote: string): Promise<RcloneAbout> {
-    return this.run(['about', `${remote}:`, '--json']).then(
+    return this.run(['about', root(remote), '--json']).then(
       (out) => JSON.parse(out) as RcloneAbout,
     );
   }
@@ -26,25 +26,37 @@ export class RcloneService {
     remotePath: string,
     localPath: string,
   ): Promise<string> {
-    return this.run(['copyto', `${remote}:${remotePath}`, localPath]);
+    return this.run(['copyto', root(remote) + remotePath, localPath]);
   }
 
+  /** Failures (rclone missing, signed out, provider error) surface as 503 with rclone's own message. */
   private run(args: string[]): Promise<string> {
     const env = { ...process.env };
     const conf = this.config.get('RCLONE_CONFIG');
     if (conf) env.RCLONE_CONFIG = conf;
+    const fail = (why: string) =>
+      new ServiceUnavailableException(`rclone ${args[0]}: ${why}`);
     return new Promise((resolve, reject) => {
       const child = spawn(this.config.get('RCLONE_BIN'), args, { env });
       let out = '';
       let err = '';
       child.stdout.on('data', (d: Buffer) => (out += d.toString()));
       child.stderr.on('data', (d: Buffer) => (err += d.toString()));
-      child.on('error', reject);
+      child.on('error', (e) => reject(fail(e.message)));
       child.on('close', (code) =>
         code === 0
           ? resolve(out)
-          : reject(new Error(`rclone ${args[0]} exit ${code}: ${err.trim()}`)),
+          : reject(fail(`exit ${code}: ${lastLine(err)}`)),
       );
     });
   }
+}
+
+/** "name" and "name:" both mean the remote's root (the pushers' settings keep the colon). */
+function root(remote: string): string {
+  return remote.endsWith(':') ? remote : `${remote}:`;
+}
+
+function lastLine(text: string): string {
+  return text.trim().split('\n').pop() ?? '';
 }
