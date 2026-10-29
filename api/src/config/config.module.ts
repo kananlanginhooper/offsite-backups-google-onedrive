@@ -5,7 +5,14 @@ import { validateEnv } from './env.schema';
 
 @Global()
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv })],
+  // The repo keeps one .env at its root; the container gets the same values as real env vars.
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../.env'],
+      validate: validateEnv,
+    }),
+  ],
   providers: [AppConfig],
   exports: [AppConfig],
 })
