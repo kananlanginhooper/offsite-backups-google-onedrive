@@ -4,6 +4,8 @@ Everything specific to one library lives there: database, remotes, accounts, fol
 inventory table's name. Batch definitions (which source folders or projects make up a run) live in
 the JSON file named by PUSH_BATCHES_FILE, kept out of git. See .env.example and batches.example.json.
 """
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
