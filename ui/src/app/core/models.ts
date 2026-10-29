@@ -12,6 +12,8 @@ export type ProviderTotals = S['ProviderTotalsDto'];
 export type DailyTotals = S['DailyTotalsDto'];
 export type Restore = S['RestoreDto'];
 export type JobRun = S['JobRunDto'];
+export type ConnectStart = S['ConnectStartDto'];
+export type ConnectResult = S['ConnectResultDto'];
 
 export type ProviderId = Copy['provider'];
 export type RemoteProviderId = Provider['id'];

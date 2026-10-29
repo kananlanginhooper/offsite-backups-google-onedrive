@@ -7,6 +7,7 @@ A dashboard to track, save and restore offsite copies of a home file library on 
 ## What it shows
 
 - **Overview:** space used and free on each provider (from `rclone about`), how many files and bytes are offsite per provider, and a chart of the bytes verified per day.
+- **Sign in / Reconnect:** signs a remote in, or back in when its sign-in expired, without a terminal. `rclone authorize` runs on the server and handles the provider's sign-in page, scopes and token exchange, using the remote's own OAuth app when it has one. The provider then sends the browser to rclone's helper on the server's own loopback (`127.0.0.1:53682`), which the viewer's browser can't load, so the viewer pastes that page's address back into the dialog. The token is saved only into the configured remote, and only when the signed-in account matches `GDRIVE_ACCOUNT` / `ONEDRIVE_ACCOUNT`. A OneDrive remote that doesn't exist yet is created with the signed-in drive.
 - **Copies:** every offsite copy, filtered by provider and searched by content hash or path. A copy can be restored from here.
 - **Restores:** each restore copies one file down from the provider into its own new folder. The provider is only read, and nothing on the server is overwritten.
 - **Jobs:** push, restore, verify and space-check runs with their progress.
@@ -29,4 +30,4 @@ cd ui && npm install && npm run api-types && npm start       # ng serve, proxies
 cd ui && npm run build:demo                                  # Pages demo -> docs/
 ```
 
-All settings come from `.env` (see `.env.example`). `docker compose up -d --build` runs the API and UI as one container, published on the one IPv4 address in `BIND_ADDR`, on the shared external Docker network `homelab`, created once per host (`docker network create --subnet <shared subnet> homelab`). The rclone config folder is mounted read-only.
+All settings come from `.env` (see `.env.example`). `docker compose up -d --build` runs the API and UI as one container, published on the one IPv4 address in `BIND_ADDR`, on the shared external Docker network `homelab`, created once per host (`docker network create --subnet <shared subnet> homelab`). The rclone config folder is mounted writable, only so Sign in can save a new token.

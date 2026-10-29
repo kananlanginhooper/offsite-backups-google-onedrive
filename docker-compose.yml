@@ -9,8 +9,9 @@ services:
       # one IPv4 address only: a bare "port:port" also binds [::]
       - "${BIND_ADDR:-127.0.0.1}:${PORT:-8101}:${PORT:-8101}"
     volumes:
-      # read-only: the push jobs share this rclone.conf, so the app never rewrites their sign-in tokens
-      - ${RCLONE_CONFIG_DIR}:/config/rclone:ro
+      # writable only so "Sign in" can save a new token. The push jobs share this rclone.conf: the app
+      # writes only the two configured remotes, after checking the account, and keeps the file's owner
+      - ${RCLONE_CONFIG_DIR}:/config/rclone
       - ${RESTORE_HOST_DIR}:/restores
     restart: unless-stopped
 

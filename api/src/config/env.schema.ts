@@ -39,6 +39,9 @@ export const envSchema = z.object({
   RCLONE_CONFIG: z.string().default(''),
   GDRIVE_REMOTE: z.string().default(''),
   ONEDRIVE_REMOTE: z.string().default(''),
+  // The account each remote belongs to. Reconnecting refuses a sign-in to a different account.
+  GDRIVE_ACCOUNT: z.string().default(''),
+  ONEDRIVE_ACCOUNT: z.string().default(''),
   RESTORE_ROOT: z.string().default('./restores'),
 });
 

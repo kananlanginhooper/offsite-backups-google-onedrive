@@ -1,4 +1,6 @@
 import type {
+  ConnectResult,
+  ConnectStart,
   CopyPage,
   CopyQuery,
   DailyTotals,
@@ -19,6 +21,10 @@ export abstract class OffsiteData {
   abstract config(): Promise<UiConfig>;
   abstract providers(): Promise<Provider[]>;
   abstract checkSpace(id: RemoteProviderId): Promise<Space>;
+  /** Start signing a remote in: returns the provider's sign-in page. */
+  abstract connectStart(id: RemoteProviderId): Promise<ConnectStart>;
+  /** Finish it with the address the browser landed on after approving. */
+  abstract connectFinish(id: RemoteProviderId, url: string): Promise<ConnectResult>;
   abstract totals(): Promise<ProviderTotals[]>;
   abstract daily(days: number): Promise<DailyTotals[]>;
   abstract copies(query: CopyQuery): Promise<CopyPage>;
