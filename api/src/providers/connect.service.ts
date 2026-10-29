@@ -6,7 +6,13 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { chmodSync, chownSync, existsSync, statSync } from 'node:fs';
+import {
+  chmodSync,
+  chownSync,
+  copyFileSync,
+  existsSync,
+  statSync,
+} from 'node:fs';
 import { AppConfig } from '../config/app-config.service';
 import { name, RcloneService } from '../rclone/rclone.service';
 import { ConnectResultDto, ConnectStartDto } from './dto/connect.dto';
@@ -225,15 +231,29 @@ export class ConnectService {
       );
   }
 
-  /** rclone replaces rclone.conf with a new file. Keep its owner and mode, so the push jobs can still read it. */
+  /**
+   * The change is made by rclone itself, which re-reads rclone.conf, changes only that remote and
+   * replaces the file (temp file, then rename). First a dated copy is kept next to it. rclone's
+   * new file belongs to whoever ran it, so the original owner and mode are put back, both on the
+   * file and on the copy, so the push jobs that share it can still read it.
+   */
   private async write(change: () => Promise<string>): Promise<void> {
     const file = await this.rclone.configFile();
     const before = existsSync(file) ? statSync(file) : null;
-    await change();
-    if (before && process.getuid?.() === 0) {
-      chownSync(file, before.uid, before.gid);
-      chmodSync(file, before.mode & 0o777);
+    const keep = (path: string) => {
+      if (before && process.getuid?.() === 0) {
+        chownSync(path, before.uid, before.gid);
+        chmodSync(path, before.mode & 0o777);
+      }
+    };
+    if (before) {
+      const copy = `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+      copyFileSync(file, copy);
+      keep(copy);
+      this.log.log(`kept a copy of rclone.conf before saving: ${copy}`);
     }
+    await change();
+    keep(file);
   }
 
   private async waitFor<T>(
