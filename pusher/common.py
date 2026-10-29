@@ -5,7 +5,10 @@ privacy scan is clear, it isn't excluded, its screenshot text wasn't flagged pri
 category isn't on the sensitive list. Change a gate only with the owner's direct say-so.
 """
 import collections
+import json
 import os
+import subprocess
+import tempfile
 import time
 
 import config
@@ -71,33 +74,57 @@ def order_args() -> tuple:
     return (config.DEPRIORITIZED_PREFIX + "%",) if config.DEPRIORITIZED_PREFIX else ()
 
 
-def plan_chunks(rows, label: str):
-    """Pick one readable intake copy per hash, group by intake root, and cut into chunks of at most
-    300 files or 20 GB. Returns [(root, [(hash, rel_path), ...]), ...]."""
+def pick_files(rows, label: str):
+    """Pick one readable intake copy per hash. Returns [(hash, root, rel_path), ...]."""
     pick = {}
     for h, dest in rows:
         if h not in pick and dest and os.path.isfile(dest) and dest.startswith(config.INTAKE_ROOTS):
             pick[h] = dest
-    groups = collections.defaultdict(list)
-    for h, dest in pick.items():
-        root = next(r for r in config.INTAKE_ROOTS if dest.startswith(r))
-        groups[root].append((h, dest[len(root):]))
     skipped = len({h for h, _ in rows}) - len(pick)
     log(f"{label}: {skipped} hashes skipped (no readable intake copy)")
     log(f"{label}: {len(pick)} hashes, {sum(os.path.getsize(p) for p in pick.values()) / 1e9:.1f} GB to push")
+    picked = []
+    for h, dest in pick.items():
+        root = next(r for r in config.INTAKE_ROOTS if dest.startswith(r))
+        picked.append((h, root, dest[len(root):]))
+    return picked
 
-    chunks = []
-    for root, items in groups.items():
-        cur_chunk, cur_bytes = [], 0
-        for it in items:
-            cur_chunk.append(it)
-            cur_bytes += os.path.getsize(root + it[1])
-            if len(cur_chunk) >= 300 or cur_bytes >= 20e9:
-                chunks.append((root, cur_chunk))
-                cur_chunk, cur_bytes = [], 0
-        if cur_chunk:
-            chunks.append((root, cur_chunk))
-    return chunks
+
+def push_with_cli(cur, provider, files, batch: str, dry_run: bool, extra=()) -> int:
+    """Hand the picked files to the provider's standalone CLI (gdrive-rclone / onedrive-rclone),
+    then record every copy its manifest reports as verified. The CLI chunks, copies, verifies by
+    the provider's own hash, and refuses a file whose content no longer matches its catalog hash.
+    Returns the CLI's exit code (7 = provider cap, run again later)."""
+    cmd = [*provider.cli, "push", "--remote", provider.remote, "--dest", provider.base, *extra]
+    log(" ".join(cmd) + f" ({len(files)} files)")
+    if dry_run or not files:
+        return 0
+    by_path = {}
+    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8", suffix=".jsonl") as lst:
+        for h, root, rel in files:
+            lst.write(json.dumps({"local_path": root + rel, "remote_path": rel, "sha256": h}) + "\n")
+            by_path[root + rel] = (h, root, rel)
+    manifest = lst.name + ".manifest"
+    try:
+        rc = subprocess.run([*cmd, "--list", lst.name, "--manifest", manifest]).returncode
+        counts = collections.Counter()
+        if os.path.exists(manifest):
+            with open(manifest, encoding="utf-8") as f:
+                for line in f:
+                    row = json.loads(line)
+                    counts[row["status"]] += 1
+                    if row["status"] in ("copied", "skipped"):
+                        h, root, rel = by_path[row["local_path"]]
+                        remote_md5 = row["remote_hash"] if row["hash_type"] == "md5" else None
+                        record_copy(cur, provider, h, rel, root, remote_md5, "rclone_check", batch)
+                    elif row["status"] != "quota_stopped":
+                        log(f"NOT VERIFIED {row['local_path']}: {row['status']} {row.get('detail', '')}")
+        log(f"{provider.name}: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())) + f"; cli exit {rc}")
+        return rc
+    finally:
+        for p in (lst.name, manifest):
+            if os.path.exists(p):
+                os.unlink(p)
 
 
 def record_copy(cur, provider, h: str, rel: str, root: str, remote_md5, verified_by: str, batch: str):

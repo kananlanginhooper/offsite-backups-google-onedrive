@@ -1,26 +1,16 @@
 """Push catalogued files to Google Drive, one copy per hash, MD5-verified.
 
-Ported from the live push job; same selection, gates and verification. A run picks files by
---tier, by --project, or by a named batch (source roots and kinds) from PUSH_BATCHES_FILE.
+Ported from the live push job; same selection and gates. A run picks files by --tier, by
+--project, or by a named batch (source roots and kinds) from PUSH_BATCHES_FILE. The files move
+through the standalone gdrive-rclone CLI (GoogleDriveRclone repo), which verifies each by MD5.
 """
 import argparse
-import hashlib
 import json
 import os
-import subprocess
-import tempfile
 
 import common
 import config
 from common import log
-
-
-def md5_of(path: str) -> str:
-    h = hashlib.md5()
-    with open(path, "rb") as f:
-        while b := f.read(8 << 20):
-            h.update(b)
-    return h.hexdigest()
 
 
 def load_batch(name: str) -> dict:
@@ -94,44 +84,11 @@ def main():
             (*roots, *except_roots, *kinds, *inc, *oargs))
 
     label = f"tier {a.tier}" if a.tier is not None else f"batch {a.batch}"
-    chunks = common.plan_chunks(cur.fetchall(), label)
-    for n, (root, items) in enumerate(chunks, 1):
-        log(f"chunk {n}/{len(chunks)}: {len(items)} files")
-        remote_dir = f"{provider.remote}{provider.base}/"
-        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as lst:
-            lst.write("\n".join(rel for _, rel in items) + "\n")
-        cmd = ["rclone", "copy", root, remote_dir, "--files-from-raw", lst.name, "--drive-stop-on-upload-limit",
-               "--transfers", "4", "--checkers", "8", "--drive-chunk-size", "128M",
-               "--bwlimit", os.environ.get("PUSH_BWLIMIT", "40M"), "--stats", "60s", "--stats-one-line"]
-        print(" ".join(cmd), flush=True)
-        if a.dry_run:
-            os.unlink(lst.name)
-            continue
-        r = subprocess.run(cmd)
-        if r.returncode != 0:
-            log(f"rclone exit {r.returncode}; recording only what verifies")
-        out = subprocess.run(["rclone", "md5sum", remote_dir, "--files-from-raw", lst.name],
-                             capture_output=True, text=True).stdout
-        remote_md5 = {}
-        for line in out.splitlines():
-            if "  " in line:
-                m, p = line.split("  ", 1)
-                remote_md5[p] = m
-        ok = bad = 0
-        for h, rel in items:
-            local = md5_of(root + rel)
-            rm = remote_md5.get(rel)
-            if rm != local:
-                bad += 1
-                log(f"NOT VERIFIED {rel}: local {local} remote {rm}")
-                continue
-            common.record_copy(cur, provider, h, rel, root, rm, "rclone_check", a.batch)
-            ok += 1
-        os.unlink(lst.name)
-        log(f"{root}: verified {ok}, not verified {bad}")
-        if r.returncode == 7:
-            log("rclone fatal error (daily upload limit?); stopping this run")
-            break
+    files = common.pick_files(cur.fetchall(), label)
+    rc = common.push_with_cli(cur, provider, files, a.batch, a.dry_run,
+                              ["--bwlimit", os.environ.get("PUSH_BWLIMIT", "40M")])
+    if rc == 7:
+        log("rclone fatal error (daily upload limit?); stopping this run")
 
 
 if __name__ == "__main__":

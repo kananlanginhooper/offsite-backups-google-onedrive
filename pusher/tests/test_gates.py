@@ -70,7 +70,7 @@ def build_db(cases, kind="pdf", tier=1, **db_kw):
 def run(module, db, *argv):
     rclone = FakeRclone()
     with mock.patch.dict(sys.modules, {"pymysql": fake_pymysql(db)}), \
-         mock.patch.object(module.subprocess, "run", rclone.run), \
+         mock.patch.object(module.common.subprocess, "run", rclone.run), \
          mock.patch.object(sys, "argv", [module.__name__, *argv]):
         module.main()
     return rclone
@@ -114,6 +114,14 @@ class GoogleDriveGates(unittest.TestCase):
     def test_missing_privacy_scan_table_uploads_nothing(self):
         rclone = run(gdrive_push, build_db(CASES, missing_tables={"sensitive_flag"}), "--tier", "1", "--batch", "t")
         self.assertEqual(rclone.calls, [])
+
+    def test_each_file_goes_to_the_cli_with_its_catalog_hash(self):
+        rclone = run(gdrive_push, build_db(CASES), "--tier", "1", "--batch", "t")
+        self.assertEqual(rclone.calls[0][1:6], ["push", "--remote", "gd:", "--dest", "base"])
+        for row in rclone.listed:
+            name = os.path.basename(row["local_path"]).rsplit(".", 1)[0]
+            self.assertEqual(row["sha256"], name.ljust(64, "0"))  # the CLI refuses a file that no longer matches
+            self.assertEqual(row["remote_path"], f"docs/{name}.pdf")
 
     def test_dry_run_hands_nothing_to_rclone(self):
         db = build_db(CASES)

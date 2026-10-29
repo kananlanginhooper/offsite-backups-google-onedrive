@@ -1,12 +1,14 @@
 # Pushers
 
-The jobs that copy files offsite with rclone and record each verified copy in the catalogue's `offsite_copy` table. The dashboard reads that table.
+The jobs that decide what goes offsite and record each verified copy in the catalogue's `offsite_copy` table. The dashboard reads that table.
+
+The files themselves move through two standalone CLIs, each in its own public repo: [`gdrive-rclone`](https://github.com/kananlanginhooper/GoogleDriveRclone) and [`onedrive-rclone`](https://github.com/kananlanginhooper/OneDriveRclone). They know nothing about the catalogue. A pusher picks the files, hands the CLI a list (local path, remote path and the catalogue's SHA-256), and records what the CLI's manifest reports as `copied` or `skipped`. The CLI chunks the list (300 files or 20 GB), copies with rclone, and verifies every file against the provider's own hash. It refuses a file whose content no longer matches its SHA-256, so a damaged local copy never goes up. Install both with `pip install git+https://github.com/kananlanginhooper/<repo>`, or point `GDRIVE_CLI` / `ONEDRIVE_CLI` at the script.
 
 | File | What it does |
 |---|---|
-| `gdrive_push.py` | Google Drive: picks files by `--tier`, `--project` or a named batch, copies them in chunks (300 files or 20 GB), and verifies each one by MD5 before recording it. It stops for the day at Google's upload cap. |
-| `onedrive_push.py` | OneDrive: the irreplaceable set only (tier 1). Video is left out unless the owner tagged it. Verifies with `rclone check --combined`, because OneDrive's native hash isn't MD5. |
-| `common.py` | The shared gates and helpers. |
+| `gdrive_push.py` | Google Drive: picks files by `--tier`, `--project` or a named batch and pushes them with `gdrive-rclone`, which verifies each one by MD5. It stops for the day at Google's upload cap (CLI exit 7). |
+| `onedrive_push.py` | OneDrive: the irreplaceable set only (tier 1). Video is left out unless the owner tagged it. Pushes with `onedrive-rclone`, which verifies by QuickXorHash, OneDrive's own hash. |
+| `common.py` | The shared gates and helpers, including the hand-off to the CLI. |
 | `config.py` | Reads every setting from the repo's `.env`. |
 | `push-ctl.sh gdrive\|onedrive start\|stop\|status` | Starts a queue only when this runner holds the job lock and the remote is signed in. Stops it without killing itself. |
 | `push-queue.sh`, `onedrive-queue.sh` | Google runs the batches in `PUSH_GDRIVE_QUEUE` in order, resuming after the daily cap. OneDrive makes one pass over tier 1. |
@@ -33,5 +35,5 @@ Requires Python 3.9+ with `pymysql`, and rclone with the remotes signed in.
 
 ## Checks
 
-- `python pusher/tests/test_gates.py -v`: mock-only tests. The real gate SQL runs against an in-memory SQLite database, with a fake rclone, no network and no real data. They show a private, flagged, excluded, sensitive-category or already-offsite file is never handed to rclone or recorded, and that nothing uploads while the Takeout index is incomplete. Removing a gate makes them fail.
+- `python pusher/tests/test_gates.py -v`: mock-only tests. The real gate SQL runs against an in-memory SQLite database, with a fake CLI, no network and no real data. They show a private, flagged, excluded, sensitive-category or already-offsite file is never handed to the CLI or recorded, that every file goes with its catalogue hash, and that nothing uploads while the Takeout index is incomplete. Removing a gate makes them fail.
 - `python pusher/tools/gate_diff.py --live <copy of the live job folders> --env <private live settings> --out docs/gate-diff.md`: runs the live jobs and this port against the same recording fake database and compares every statement they send. The report masks every library-specific value. Latest result: [docs/gate-diff.md](../docs/gate-diff.md).

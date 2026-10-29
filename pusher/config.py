@@ -59,6 +59,8 @@ class Provider:
         self.remote = get(f"{prefix}_REMOTE").rstrip(":") + ":"
         self.account = get(f"{prefix}_ACCOUNT")
         self.base = get(f"{prefix}_BASE")
+        # the standalone CLI that moves the files (GoogleDriveRclone / OneDriveRclone), as a command
+        self.cli = get_list(f"{prefix}_CLI", f"{name}-rclone")
 
 
 # Shared by both pushers.
