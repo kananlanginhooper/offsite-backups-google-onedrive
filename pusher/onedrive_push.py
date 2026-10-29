@@ -5,14 +5,12 @@ Ported from the live push job; same gates as the Google pusher, plus:
     irreplaceable subset, so a slipped flag must not fill it with everything);
   - leaves video out unless the owner tagged it high-value (importance tier 1 with
     decided_by = PUSH_OWNER_TAG; automatic tiering never sets that). --allow-video-tier1 overrides;
-  - verifies with `rclone check --combined`: OneDrive's native hash isn't MD5, and rclone computes
-    the matching hash on the local side too.
+  - the files move through the standalone onedrive-rclone CLI (OneDriveRclone repo), which
+    verifies each by QuickXorHash, OneDrive's own hash, computed by rclone on both sides.
 """
 import argparse
 import os
-import subprocess
 import sys
-import tempfile
 
 import common
 import config
@@ -52,43 +50,11 @@ def main():
                 f" WHERE imp.tier = %s AND {not_offsite}" + common.order_by(),
                 (a.tier, *args, *common.order_args()))
 
-    chunks = common.plan_chunks(cur.fetchall(), f"tier {a.tier} (onedrive)")
-    for n, (root, items) in enumerate(chunks, 1):
-        log(f"chunk {n}/{len(chunks)}: {len(items)} files")
-        remote_dir = f"{provider.remote}{provider.base}/"
-        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as lst:
-            lst.write("\n".join(rel for _, rel in items) + "\n")
-        cmd = ["rclone", "copy", root, remote_dir, "--files-from-raw", lst.name,
-               "--transfers", "4", "--checkers", "8", "--stats", "60s", "--stats-one-line"]
-        if os.environ.get("ONEDRIVE_PUSH_BWLIMIT"):
-            cmd += ["--bwlimit", os.environ["ONEDRIVE_PUSH_BWLIMIT"]]
-        print(" ".join(cmd), flush=True)
-        if a.dry_run:
-            os.unlink(lst.name)
-            continue
-        r = subprocess.run(cmd)
-        if r.returncode != 0:
-            log(f"rclone copy exit {r.returncode}; recording only what verifies")
-
-        report = lst.name + ".check"
-        subprocess.run(["rclone", "check", root, remote_dir, "--files-from-raw", lst.name,
-                        "--combined", report, "--one-way"], capture_output=True, text=True)
-        verified = set()
-        if os.path.exists(report):
-            with open(report, encoding="utf-8") as f:
-                verified = {line[2:].rstrip("\n") for line in f if line.startswith("= ")}
-            os.unlink(report)
-
-        ok = bad = 0
-        for h, rel in items:
-            if rel not in verified:
-                bad += 1
-                log(f"NOT VERIFIED {rel}")
-                continue
-            common.record_copy(cur, provider, h, rel, root, None, "rclone_check", a.batch)
-            ok += 1
-        os.unlink(lst.name)
-        log(f"{root}: verified {ok}, not verified {bad}")
+    files = common.pick_files(cur.fetchall(), f"tier {a.tier} (onedrive)")
+    bw = os.environ.get("ONEDRIVE_PUSH_BWLIMIT")
+    rc = common.push_with_cli(cur, provider, files, a.batch, a.dry_run, ["--bwlimit", bw] if bw else [])
+    if rc == 7:
+        log("OneDrive is full or throttling; stopping this run")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ Only the MySQL-specific bits are translated (placeholders, INSERT IGNORE, CONCAT
 No network, no real paths, no real data.
 """
 import hashlib
+import json
 import os
 import re
 import sqlite3
@@ -78,27 +79,26 @@ class FakeCursor:
 
 
 class FakeRclone:
-    """Stands in for subprocess.run: 'copies' by remembering, verifies against the local files."""
+    """Stands in for subprocess.run calling the provider CLI (gdrive-rclone / onedrive-rclone):
+    'copies' every listed file by remembering it, and reports each as copied in the manifest."""
 
     def __init__(self):
-        self.copied = []   # relative paths handed to rclone copy
+        self.copied = []   # local paths handed to the CLI
+        self.listed = []   # the list rows as sent (local_path, remote_path, sha256)
         self.calls = []
 
     def run(self, cmd, **_kw):
-        self.calls.append(cmd[:2])
-        lst = cmd[cmd.index("--files-from-raw") + 1]
-        with open(lst, encoding="utf-8") as f:
-            rels = [line for line in f.read().splitlines() if line]
-        out = ""
-        if cmd[1] == "copy":
-            self.copied += rels
-            self._root = cmd[2]
-        elif cmd[1] == "md5sum":
-            out = "".join(f"{_md5(self._root + r)}  {r}\n" for r in rels)
-        elif cmd[1] == "check":
-            with open(cmd[cmd.index("--combined") + 1], "w", encoding="utf-8") as f:
-                f.writelines(f"= {r}\n" for r in rels)
-        return types.SimpleNamespace(returncode=0, stdout=out, stderr="")
+        self.calls.append(cmd)
+        with open(cmd[cmd.index("--list") + 1], encoding="utf-8") as f:
+            rows = [json.loads(line) for line in f if line.strip()]
+        self.listed += rows
+        with open(cmd[cmd.index("--manifest") + 1], "a", encoding="utf-8") as f:
+            for r in rows:
+                self.copied.append(r["local_path"])
+                f.write(json.dumps({"local_path": r["local_path"], "remote_path": r["remote_path"],
+                                    "remote_hash": _md5(r["local_path"]), "hash_type": "md5",
+                                    "status": "copied"}) + "\n")
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
 
 
 def _md5(path):
