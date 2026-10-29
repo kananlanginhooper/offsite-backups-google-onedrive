@@ -68,6 +68,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/providers/{id}/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ProvidersController_connect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/providers/{id}/connect/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ProvidersController_connectFinish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/copies": {
         parameters: {
             query?: never;
@@ -210,6 +242,21 @@ export interface components {
             space: components["schemas"]["SpaceDto"] | null;
             /** @description the last space check, when it failed after the latest good one */
             lastError: components["schemas"]["SpaceErrorDto"] | null;
+        };
+        ConnectStartDto: {
+            /** @description the provider's sign-in page; open it in a new tab */
+            authUrl: string;
+            /** @description where the provider sends the browser after approval (a page that will not load); its full address is pasted back */
+            redirectUri: string;
+        };
+        ConnectFinishDto: {
+            /** @description the full address the browser landed on after approving */
+            url: string;
+        };
+        ConnectResultDto: {
+            /** @description the account that signed in, when the provider says */
+            account: string | null;
+            provider: components["schemas"]["ProviderDto"];
         };
         Object: Record<string, never>;
         CopyDto: {
@@ -384,6 +431,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpaceDto"];
+                };
+            };
+        };
+    };
+    ProvidersController_connect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: "gdrive" | "onedrive";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectStartDto"];
+                };
+            };
+        };
+    };
+    ProvidersController_connectFinish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: "gdrive" | "onedrive";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectFinishDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectResultDto"];
                 };
             };
         };

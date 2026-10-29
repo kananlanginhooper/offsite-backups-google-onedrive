@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   DefaultValuePipe,
   Get,
@@ -9,6 +10,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ConnectService } from './connect.service';
+import {
+  ConnectFinishDto,
+  ConnectResultDto,
+  ConnectStartDto,
+} from './dto/connect.dto';
 import { ProviderDto, SpaceDto } from './dto/provider.dto';
 import { ProvidersService } from './providers.service';
 
@@ -19,7 +26,10 @@ const idPipe = new ParseEnumPipe({ gdrive: 'gdrive', onedrive: 'onedrive' });
 @ApiTags('providers')
 @Controller('providers')
 export class ProvidersController {
-  constructor(private readonly providers: ProvidersService) {}
+  constructor(
+    private readonly providers: ProvidersService,
+    private readonly connector: ConnectService,
+  ) {}
 
   @Get()
   @ApiOkResponse({ type: [ProviderDto] })
@@ -32,6 +42,23 @@ export class ProvidersController {
   @ApiOkResponse({ type: SpaceDto })
   checkSpace(@Param('id', idPipe) id: RemoteId): Promise<SpaceDto> {
     return this.providers.checkSpace(id);
+  }
+
+  @Post(':id/connect')
+  @ApiParam({ name: 'id', enum: REMOTE_IDS })
+  @ApiOkResponse({ type: ConnectStartDto })
+  connect(@Param('id', idPipe) id: RemoteId): Promise<ConnectStartDto> {
+    return this.connector.start(id);
+  }
+
+  @Post(':id/connect/finish')
+  @ApiParam({ name: 'id', enum: REMOTE_IDS })
+  @ApiOkResponse({ type: ConnectResultDto })
+  connectFinish(
+    @Param('id', idPipe) id: RemoteId,
+    @Body() body: ConnectFinishDto,
+  ): Promise<ConnectResultDto> {
+    return this.connector.finish(id, body.url);
   }
 
   @Get(':id/space')

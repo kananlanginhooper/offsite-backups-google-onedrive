@@ -1,6 +1,11 @@
 <section class="providers">
   @for (p of providers(); track p.id) {
-    <app-provider-card [provider]="p" [checking]="checking() === p.id" (checkSpace)="checkSpace(p.id)" />
+    <app-provider-card
+      [provider]="p"
+      [checking]="checking() === p.id"
+      (checkSpace)="checkSpace(p.id)"
+      (connect)="connect(p)"
+    />
   }
 </section>
 

@@ -2,6 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type {
+  ConnectResult,
+  ConnectStart,
   CopyPage,
   CopyQuery,
   DailyTotals,
@@ -33,6 +35,9 @@ export class ApiData extends OffsiteData {
   config = () => this.get<UiConfig>('config');
   providers = () => this.get<Provider[]>('providers');
   checkSpace = (id: RemoteProviderId) => this.post<Space>(`providers/${id}/space`);
+  connectStart = (id: RemoteProviderId) => this.post<ConnectStart>(`providers/${id}/connect`);
+  connectFinish = (id: RemoteProviderId, url: string) =>
+    this.post<ConnectResult>(`providers/${id}/connect/finish`, { url });
   totals = () => this.get<ProviderTotals[]>('copies/totals');
   daily = (days: number) => this.get<DailyTotals[]>('copies/daily', { days });
   copies = (q: CopyQuery) => this.get<CopyPage>('copies', { ...q });

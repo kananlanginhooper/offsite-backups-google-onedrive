@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { firstValueFrom } from 'rxjs';
 import { OffsiteData } from '../../core/data/offsite-data';
 import type { DailyTotals, Provider, ProviderTotals, RemoteProviderId } from '../../core/models';
 import { ProviderChip } from '../../shared/provider-chip';
 import { StatTile } from '../../shared/stat-tile';
 import { ago, bytes, count } from '../../shared/format';
+import { ConnectDialog } from './connect-dialog';
 import { DailyChart } from './daily-chart';
 import { ProviderCard } from './provider-card';
 
@@ -22,6 +25,7 @@ const STALE_MS = 6 * 3_600_000;
 export class OverviewPage implements OnInit {
   private readonly data = inject(OffsiteData);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly providers = signal<Provider[]>([]);
   protected readonly totals = signal<ProviderTotals[]>([]);
@@ -55,6 +59,14 @@ export class OverviewPage implements OnInit {
       const last = [p.space?.takenAt, p.lastError?.at].filter(Boolean).sort().pop();
       if (p.remote && (!last || Date.now() - Date.parse(last) > STALE_MS)) await this.checkSpace(p.id);
     }
+  }
+
+  /** Sign a remote in (or back in). On success the card shows the fresh space check. */
+  async connect(p: Provider) {
+    const done = await firstValueFrom(
+      this.dialog.open(ConnectDialog, { data: p, width: '36rem' }).afterClosed(),
+    );
+    if (done) this.providers.update((list) => list.map((x) => (x.id === p.id ? done.provider : x)));
   }
 
   /** A failed check isn't a popup: the card shows the reason, which the API keeps as lastError. */

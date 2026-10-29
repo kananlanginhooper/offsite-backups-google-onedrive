@@ -144,6 +144,84 @@
         ]
       }
     },
+    "/api/providers/{id}/connect": {
+      "post": {
+        "operationId": "ProvidersController_connect",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "gdrive",
+                "onedrive"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectStartDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/api/providers/{id}/connect/finish": {
+      "post": {
+        "operationId": "ProvidersController_connectFinish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "gdrive",
+                "onedrive"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectFinishDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "providers"
+        ]
+      }
+    },
     "/api/copies": {
       "get": {
         "operationId": "CopiesController_page",
@@ -566,6 +644,52 @@
           "remote",
           "space",
           "lastError"
+        ]
+      },
+      "ConnectStartDto": {
+        "type": "object",
+        "properties": {
+          "authUrl": {
+            "type": "string",
+            "description": "the provider's sign-in page; open it in a new tab"
+          },
+          "redirectUri": {
+            "type": "string",
+            "description": "where the provider sends the browser after approval (a page that will not load); its full address is pasted back"
+          }
+        },
+        "required": [
+          "authUrl",
+          "redirectUri"
+        ]
+      },
+      "ConnectFinishDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "the full address the browser landed on after approving"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ConnectResultDto": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "nullable": true,
+            "description": "the account that signed in, when the provider says"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderDto"
+          }
+        },
+        "required": [
+          "account",
+          "provider"
         ]
       },
       "Object": {

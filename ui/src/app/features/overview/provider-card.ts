@@ -17,8 +17,13 @@ export class ProviderCard {
   readonly provider = input.required<Provider>();
   readonly checking = input(false);
   readonly checkSpace = output<void>();
+  readonly connect = output<void>();
 
   protected readonly space = computed(() => this.provider().space);
+  /** The last check failed because the remote isn't signed in (expired, or never set up). */
+  protected readonly signedOut = computed(() =>
+    /^(Signed out|Not signed in)/.test(this.provider().lastError?.reason ?? ''),
+  );
   protected readonly usedPct = computed(() => {
     const s = this.space();
     return s?.totalBytes && s.usedBytes !== null ? (100 * s.usedBytes) / s.totalBytes : 0;

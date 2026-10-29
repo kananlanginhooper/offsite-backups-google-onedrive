@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import type {
+  ConnectResult,
+  ConnectStart,
   Copy,
   CopyPage,
   CopyQuery,
@@ -120,6 +122,17 @@ export class DemoData extends OffsiteData {
     const s = { ...this.space[id], takenAt: new Date().toISOString() };
     this.space[id] = s;
     return s;
+  }
+
+  /** The demo has no provider to sign in to: the sign-in page is a blank tab, and any pasted address with a code works. */
+  async connectStart(): Promise<ConnectStart> {
+    return { authUrl: 'about:blank', redirectUri: 'http://127.0.0.1:53682/' };
+  }
+
+  async connectFinish(id: RemoteProviderId, url: string): Promise<ConnectResult> {
+    if (!url.includes('code=')) throw new Error('That address has no sign-in code in it.');
+    const provider = (await this.providers()).find((p) => p.id === id)!;
+    return { account: 'demo@example.com', provider };
   }
 
   async totals(): Promise<ProviderTotals[]> {

@@ -15,6 +15,13 @@ header {
   gap: var(--app-space-2);
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--app-space-2);
+}
+
 h3 {
   margin: 0;
   font: var(--app-text-lg);

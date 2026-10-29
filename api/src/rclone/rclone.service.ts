@@ -1,5 +1,5 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { spawn } from 'node:child_process';
+import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { AppConfig } from '../config/app-config.service';
 
 export interface RcloneAbout {
@@ -29,11 +29,64 @@ export class RcloneService {
     return this.run(['copyto', root(remote) + remotePath, localPath]);
   }
 
-  /** Failures (rclone missing, signed out, provider error) surface as 503 with rclone's own message. */
-  private run(args: string[]): Promise<string> {
+  /** Every remote's settings, sign-in tokens included. Read on the server only; never sent out. */
+  async configDump(): Promise<Record<string, Record<string, string>>> {
+    return JSON.parse(await this.run(['config', 'dump'])) as Record<
+      string,
+      Record<string, string>
+    >;
+  }
+
+  /** Where rclone.conf is (the last line of `rclone config file`). */
+  async configFile(): Promise<string> {
+    return (await this.run(['config', 'file'])).trim().split('\n').pop() ?? '';
+  }
+
+  /** Set some of a remote's settings, without starting rclone's own sign-in. */
+  configUpdate(
+    remote: string,
+    values: Record<string, string>,
+  ): Promise<string> {
+    return this.run([
+      'config',
+      'update',
+      name(remote),
+      ...pairs(values),
+      '--non-interactive',
+    ]);
+  }
+
+  /** Add a remote, without starting rclone's own sign-in. */
+  configCreate(
+    remote: string,
+    type: string,
+    values: Record<string, string>,
+  ): Promise<string> {
+    return this.run([
+      'config',
+      'create',
+      name(remote),
+      type,
+      ...pairs(values),
+      '--non-interactive',
+    ]);
+  }
+
+  /** Start a long-running rclone (e.g. `authorize`) and hand back the process. */
+  start(args: string[]): ChildProcessWithoutNullStreams {
+    return spawn(this.config.get('RCLONE_BIN'), args, { env: this.env() });
+  }
+
+  private env(): NodeJS.ProcessEnv {
     const env = { ...process.env };
     const conf = this.config.get('RCLONE_CONFIG');
     if (conf) env.RCLONE_CONFIG = conf;
+    return env;
+  }
+
+  /** Failures (rclone missing, signed out, provider error) surface as 503 with rclone's own message. */
+  private run(args: string[]): Promise<string> {
+    const env = this.env();
     const fail = (why: string) =>
       new ServiceUnavailableException(`rclone ${args[0]}: ${why}`);
     return new Promise((resolve, reject) => {
@@ -55,6 +108,15 @@ export class RcloneService {
 /** "name" and "name:" both mean the remote's root (the pushers' settings keep the colon). */
 function root(remote: string): string {
   return remote.endsWith(':') ? remote : `${remote}:`;
+}
+
+/** The remote's name as rclone.conf spells its section: no colon. */
+export function name(remote: string): string {
+  return remote.replace(/:$/, '');
+}
+
+function pairs(values: Record<string, string>): string[] {
+  return Object.entries(values).flat();
 }
 
 /** rclone's error as one line. Its log line is often followed by a multi-line JSON reply
