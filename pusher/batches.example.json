@@ -1,0 +1,13 @@
+{
+  "documents": {
+    "note": "everything except photos and video from these source folders",
+    "src_roots": ["C:\\Users\\someone\\Documents", "C:\\Users\\someone\\Desktop"],
+    "exclude_kinds": ["jpeg", "heic", "png", "gif", "webp", "tiff", "mp4", "mov", "avi", "mkv", "wmv", "m4v", "mts"]
+  },
+  "video": {
+    "note": "video is deprioritized: paused unless a file is tagged high-value",
+    "paused": true,
+    "include_kinds": ["mp4", "mov", "avi", "mkv", "wmv", "m4v", "mts"],
+    "all_roots_except": ["%Recycle.Bin%"]
+  }
+}
