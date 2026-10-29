@@ -193,6 +193,13 @@ export interface components {
             freeBytes: number | null;
             trashedBytes: number | null;
         };
+        SpaceErrorDto: {
+            at: string;
+            /** @description why the check failed, in plain words */
+            reason: string;
+            /** @description rclone's own last line */
+            detail: string;
+        };
         ProviderDto: {
             /** @enum {string} */
             id: "gdrive" | "onedrive";
@@ -201,6 +208,8 @@ export interface components {
             remote: string;
             /** @description latest space check */
             space: components["schemas"]["SpaceDto"] | null;
+            /** @description the last space check, when it failed after the latest good one */
+            lastError: components["schemas"]["SpaceErrorDto"] | null;
         };
         Object: Record<string, never>;
         CopyDto: {

@@ -26,6 +26,8 @@ export class DailyChart {
     const days = [...new Set(rows.map((r) => r.day))].sort();
     const providers = [...new Set(rows.map((r) => r.provider))] as ProviderId[];
     return {
+      // No grow-in: a frame shown mid-animation (or while hidden in the wrapper) looked empty.
+      animation: false,
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'axis',

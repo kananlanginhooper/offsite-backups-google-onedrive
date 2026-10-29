@@ -31,3 +31,16 @@ h3 {
   color: var(--app-muted);
   font: var(--app-text-xs);
 }
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  margin: 0;
+  color: var(--app-bad);
+  font: var(--app-text-sm);
+
+  mat-icon {
+    flex: none;
+  }
+}
