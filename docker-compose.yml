@@ -1,0 +1,11 @@
+# The API + UI. No database service: it uses the existing databases named in .env.
+services:
+  offsite:
+    build: .
+    env_file: .env
+    ports:
+      - "${PORT:-8101}:${PORT:-8101}"
+    volumes:
+      - ${RCLONE_CONFIG_DIR}:/config/rclone
+      - ${RESTORE_HOST_DIR}:/restores
+    restart: unless-stopped

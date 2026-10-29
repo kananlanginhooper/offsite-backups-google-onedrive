@@ -1,0 +1,84 @@
+// This app's own database (Postgres). Migrations: npm run db:migrate.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/app"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Provider {
+  gdrive
+  gphotos
+  onedrive
+}
+
+enum JobKind {
+  push
+  restore
+  verify
+  space
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+}
+
+/// One run of a push, restore, verify or space check.
+model JobRun {
+  id         Int       @id @default(autoincrement())
+  provider   Provider
+  kind       JobKind
+  status     JobStatus @default(queued)
+  startedAt  DateTime  @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  filesTotal Int?      @map("files_total")
+  filesDone  Int       @default(0) @map("files_done")
+  bytesTotal BigInt?   @map("bytes_total")
+  bytesDone  BigInt    @default(0) @map("bytes_done")
+  message    String?
+
+  restores RestoreRequest[]
+
+  @@index([provider, startedAt])
+  @@map("job_run")
+}
+
+/// A request to copy one offsite file back down to the server.
+model RestoreRequest {
+  id          Int       @id @default(autoincrement())
+  provider    Provider
+  hash        String?   @db.Char(64)
+  remotePath  String    @map("remote_path")
+  destination String
+  status      JobStatus @default(queued)
+  requestedAt DateTime  @default(now()) @map("requested_at")
+  finishedAt  DateTime? @map("finished_at")
+  bytes       BigInt?
+  error       String?
+  jobRunId    Int?      @map("job_run_id")
+  jobRun      JobRun?   @relation(fields: [jobRunId], references: [id])
+
+  @@index([hash])
+  @@map("restore_request")
+}
+
+/// Space on a provider at one moment (from rclone about).
+model SpaceSnapshot {
+  id           Int      @id @default(autoincrement())
+  provider     Provider
+  takenAt      DateTime @default(now()) @map("taken_at")
+  totalBytes   BigInt?  @map("total_bytes")
+  usedBytes    BigInt?  @map("used_bytes")
+  freeBytes    BigInt?  @map("free_bytes")
+  trashedBytes BigInt?  @map("trashed_bytes")
+
+  @@index([provider, takenAt])
+  @@map("space_snapshot")
+}

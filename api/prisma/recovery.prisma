@@ -1,0 +1,56 @@
+// The shared recovery database (MySQL), read-only for this app. The live push jobs own these
+// tables; never migrate from this schema (no prisma.config points at it).
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/recovery"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum offsite_copy_provider {
+  gdrive
+  gphotos
+  onedrive
+}
+
+enum offsite_copy_placed_by {
+  drivefs_backup
+  drivefs_mydrive
+  rclone_push
+  gphotos_upload
+  preexisting
+}
+
+enum offsite_copy_verified_by {
+  drivefs_md5
+  rclone_check
+  takeout_hash
+  copy_sha256
+  none
+}
+
+/// One verified (or recorded) copy of a file's content on a provider. Keyed by sha256 hash.
+model offsite_copy {
+  id              BigInt                   @id @default(autoincrement())
+  hash            String                   @db.Char(64)
+  provider        offsite_copy_provider
+  account         String                   @db.VarChar(128)
+  remote_path     String                   @db.VarChar(2048)
+  remote_path_md5 Bytes                    @db.Binary(16)
+  remote_md5      String?                  @db.Char(32)
+  size            BigInt?                  @db.UnsignedBigInt
+  placed_by       offsite_copy_placed_by
+  verified_by     offsite_copy_verified_by
+  verified_at     DateTime?                @db.DateTime(0)
+  source_path     String?                  @db.VarChar(4096)
+  batch           String?                  @db.VarChar(64)
+  recorded_at     DateTime                 @default(now()) @db.DateTime(0)
+
+  @@unique([provider, account, remote_path_md5], map: "remote")
+  @@index([hash], map: "hash")
+  @@index([batch], map: "batch")
+}

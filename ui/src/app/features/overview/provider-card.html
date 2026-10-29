@@ -1,0 +1,27 @@
+<header>
+  <h3>{{ provider().label }}</h3>
+  <button
+    mat-stroked-button
+    [disabled]="checking() || !provider().remote"
+    (click)="checkSpace.emit()"
+  >
+    <mat-icon>refresh</mat-icon> Check space
+  </button>
+</header>
+
+@if (!provider().remote) {
+  <p class="muted">Not set up: no rclone remote configured.</p>
+} @else if (space(); as s) {
+  <mat-progress-bar mode="determinate" [value]="usedPct()" />
+  <div class="row">
+    <span><b>{{ bytes(s.usedBytes) }}</b> used of {{ bytes(s.totalBytes) }}</span>
+    <span>{{ bytes(s.freeBytes) }} free</span>
+  </div>
+  <div class="muted">Checked {{ ago(s.takenAt) }} · trash {{ bytes(s.trashedBytes) }}</div>
+} @else {
+  <p class="muted">Space not checked yet.</p>
+}
+
+@if (checking()) {
+  <mat-progress-bar mode="indeterminate" class="checking" />
+}

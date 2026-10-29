@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-2);
+  padding: var(--app-space-4);
+  background: var(--app-card);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-m);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-2);
+}
+
+h3 {
+  margin: 0;
+  font: var(--app-text-lg);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  font: var(--app-text-sm);
+}
+
+.muted {
+  margin: 0;
+  color: var(--app-muted);
+  font: var(--app-text-xs);
+}

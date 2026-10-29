@@ -1,0 +1,43 @@
+@if (rows().length) {
+  <table mat-table [dataSource]="rows()">
+    <ng-container matColumnDef="kind">
+      <th mat-header-cell *matHeaderCellDef>Job</th>
+      <td mat-cell *matCellDef="let j">{{ j.kind }}</td>
+    </ng-container>
+    <ng-container matColumnDef="provider">
+      <th mat-header-cell *matHeaderCellDef>Provider</th>
+      <td mat-cell *matCellDef="let j"><app-provider-chip [provider]="asProvider(j.provider)" /></td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let j">
+        <app-status-pill [status]="j.status" />
+        @if (j.message) {
+          <div class="muted">{{ j.message }}</div>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="progress">
+      <th mat-header-cell *matHeaderCellDef>Progress</th>
+      <td mat-cell *matCellDef="let j" class="progress">
+        <mat-progress-bar mode="determinate" [value]="pct(j)" />
+        <div class="muted">
+          {{ count(j.filesDone) }} / {{ count(j.filesTotal) }} files · {{ bytes(j.bytesDone) }}
+        </div>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="started">
+      <th mat-header-cell *matHeaderCellDef>Started</th>
+      <td mat-cell *matCellDef="let j">{{ when(j.startedAt) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="finished">
+      <th mat-header-cell *matHeaderCellDef>Finished</th>
+      <td mat-cell *matCellDef="let j">{{ when(j.finishedAt) }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+  </table>
+} @else {
+  <app-empty-state text="No job runs recorded yet" icon="history" />
+}

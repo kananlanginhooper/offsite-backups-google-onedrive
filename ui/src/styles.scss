@@ -1,0 +1,11 @@
+// App styles on top of the shared theme (src/styles/theme.scss, loaded first).
+
+:root {
+  --app-accent: light-dark(#2f6f5e, #7cc4ae);
+}
+
+// Material Symbols as the mat-icon font
+.mat-icon {
+  font-family: 'Material Symbols Outlined';
+  font-feature-settings: 'liga';
+}
