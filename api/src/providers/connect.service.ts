@@ -157,9 +157,7 @@ export class ConnectService {
       s.exited,
       new Promise((r) => setTimeout(r, EXCHANGE_MS).unref()),
     ]);
-    const json = /--->\s*(\{[\s\S]*?\})\s*<---End paste/.exec(
-      s.out + s.err,
-    )?.[1];
+    const json = pastedToken(s.out + s.err);
     const running = s.child.exitCode === null;
     this.stop();
     if (!json) {
@@ -298,6 +296,33 @@ export class ConnectService {
     if (s.child.exitCode === null) s.child.kill();
     this.session = undefined;
   }
+}
+
+/**
+ * The token between rclone's "--->" and "<---End paste" markers. Without a config blob rclone
+ * prints the token JSON itself; given one (a remote with its own OAuth app), it prints base64 of
+ * a JSON config whose "token" value is the token JSON. Returns the token JSON, or undefined.
+ */
+export function pastedToken(output: string): string | undefined {
+  const pasted = /--->\s*([\s\S]*?)\s*<---End paste/.exec(output)?.[1].trim();
+  if (!pasted) return undefined;
+  const parse = (text: string): Record<string, unknown> | undefined => {
+    try {
+      const v: unknown = JSON.parse(text);
+      return v && typeof v === 'object'
+        ? (v as Record<string, unknown>)
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const obj =
+    parse(pasted) ?? parse(Buffer.from(pasted, 'base64').toString('utf8'));
+  if (!obj) return undefined;
+  if (typeof obj.access_token === 'string') return JSON.stringify(obj);
+  if (typeof obj.token === 'string' && parse(obj.token)?.access_token)
+    return obj.token;
+  return undefined;
 }
 
 async function bearer<T>(url: string, token: Token): Promise<T> {

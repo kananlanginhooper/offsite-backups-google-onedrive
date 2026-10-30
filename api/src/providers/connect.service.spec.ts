@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ConnectService } from './connect.service';
+import { ConnectService, pastedToken } from './connect.service';
 
 /** A stand-in for a running `rclone authorize`: prints the helper address, then the token once "answered". */
 function fakeAuthorize() {
@@ -187,5 +187,20 @@ describe('ConnectService', () => {
       svc.finish('gdrive', 'http://127.0.0.1:53682/?error=access_denied'),
     ).rejects.toThrow(/access_denied.*Nothing was saved/);
     expect(rclone.configUpdate).not.toHaveBeenCalled();
+  });
+
+  it('reads the token whether rclone prints it as JSON or as a base64 config blob', () => {
+    const token = '{"access_token":"at","refresh_token":"rt"}';
+    const wrap = (body: string) =>
+      `NOTICE: Got code
+Paste the following into your remote machine --->
+${body}
+<---End paste
+`;
+    expect(pastedToken(wrap(token))).toBe(token);
+    const blob = Buffer.from(JSON.stringify({ token })).toString('base64');
+    expect(pastedToken(wrap(blob.replace(/=+$/, '')))).toBe(token);
+    expect(pastedToken(wrap('not a token'))).toBeUndefined();
+    expect(pastedToken('NOTICE: Got code')).toBeUndefined();
   });
 });
