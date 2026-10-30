@@ -1,5 +1,7 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { chmodSync, chownSync, statSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { AppConfig } from '../config/app-config.service';
 
 export interface RcloneAbout {
@@ -74,7 +76,30 @@ export class RcloneService {
 
   /** Start a long-running rclone (e.g. `authorize`) and hand back the process. */
   start(args: string[]): ChildProcessWithoutNullStreams {
-    return spawn(this.config.get('RCLONE_BIN'), args, { env: this.env() });
+    const child = spawn(this.config.get('RCLONE_BIN'), args, {
+      env: this.env(),
+    });
+    child.on('close', () => this.keepOwner());
+    return child;
+  }
+
+  /**
+   * rclone rewrites rclone.conf whenever it refreshes a token, on any command, and the new file
+   * belongs to whoever ran it (root in the container). The push jobs run as the folder's owner and
+   * must still read it, so after every run the file goes back to that owner, mode 600.
+   */
+  private keepOwner(): void {
+    const conf = this.config.get('RCLONE_CONFIG');
+    if (!conf || process.getuid?.() !== 0) return;
+    try {
+      const dir = statSync(dirname(conf));
+      const file = statSync(conf);
+      if (file.uid !== dir.uid || file.gid !== dir.gid)
+        chownSync(conf, dir.uid, dir.gid);
+      if ((file.mode & 0o777) !== 0o600) chmodSync(conf, 0o600);
+    } catch {
+      // no rclone.conf yet
+    }
   }
 
   private env(): NodeJS.ProcessEnv {
@@ -96,11 +121,11 @@ export class RcloneService {
       child.stdout.on('data', (d: Buffer) => (out += d.toString()));
       child.stderr.on('data', (d: Buffer) => (err += d.toString()));
       child.on('error', (e) => reject(fail(e.message)));
-      child.on('close', (code) =>
-        code === 0
-          ? resolve(out)
-          : reject(fail(`exit ${code}: ${oneLine(err)}`)),
-      );
+      child.on('close', (code) => {
+        this.keepOwner();
+        if (code === 0) resolve(out);
+        else reject(fail(`exit ${code}: ${oneLine(err)}`));
+      });
     });
   }
 }
