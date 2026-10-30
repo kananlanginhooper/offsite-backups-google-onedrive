@@ -1,7 +1,4 @@
-import { BreakpointObserver } from '@angular/cdk/layout';
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
@@ -9,6 +6,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import type { Copy } from '../../core/models';
 import { ProviderChip } from '../../shared/provider-chip';
 import { bytes, when } from '../../shared/format';
+import { phoneWidth } from '../../shared/phone';
 
 /** The offsite copies, one per row, with a restore button. */
 @Component({
@@ -23,12 +21,7 @@ export class CopiesTable {
   readonly restore = output<Copy>();
 
   /** Under 600 px each copy is one stacked cell (provider, path, size, date) plus the restore button. */
-  private readonly phone = toSignal(
-    inject(BreakpointObserver)
-      .observe('(max-width: 600px)')
-      .pipe(map((s) => s.matches)),
-    { initialValue: false },
-  );
+  private readonly phone = phoneWidth();
   protected readonly columns = computed(() =>
     this.phone() ? ['item', 'actions'] : ['provider', 'path', 'size', 'verified', 'hash', 'actions'],
   );

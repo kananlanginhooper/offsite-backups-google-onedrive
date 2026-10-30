@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -8,6 +8,7 @@ import { EmptyState } from '../../shared/empty-state';
 import { ProviderChip } from '../../shared/provider-chip';
 import { StatusPill } from '../../shared/status-pill';
 import { bytes, count, when } from '../../shared/format';
+import { phoneWidth } from '../../shared/phone';
 
 /** Push, restore and verify runs, newest first. */
 @Component({
@@ -20,6 +21,8 @@ import { bytes, count, when } from '../../shared/format';
     table { width: 100%; background: transparent; }
     .progress { min-width: 160px; }
     .muted { color: var(--app-muted); font: var(--app-text-xs); }
+    .item { padding-top: var(--app-space-2); padding-bottom: var(--app-space-2); }
+    .line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--app-space-2); margin-bottom: var(--app-space-1); }
   `,
 })
 export class JobsPage implements OnInit {
@@ -27,7 +30,11 @@ export class JobsPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
 
   protected readonly rows = signal<JobRun[]>([]);
-  protected readonly columns = ['kind', 'provider', 'status', 'progress', 'started', 'finished'];
+  private readonly phone = phoneWidth();
+  /** Under 600 px each run is one stacked cell. */
+  protected readonly columns = computed(() =>
+    this.phone() ? ['item'] : ['kind', 'provider', 'status', 'progress', 'started', 'finished'],
+  );
   protected readonly bytes = bytes;
   protected readonly count = count;
   protected readonly when = when;

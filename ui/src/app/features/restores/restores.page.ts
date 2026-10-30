@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -10,6 +10,7 @@ import { EmptyState } from '../../shared/empty-state';
 import { ProviderChip } from '../../shared/provider-chip';
 import { StatusPill } from '../../shared/status-pill';
 import { bytes, when } from '../../shared/format';
+import { phoneWidth } from '../../shared/phone';
 
 /** Restores asked for from the Copies screen, newest first. */
 @Component({
@@ -24,6 +25,10 @@ import { bytes, when } from '../../shared/format';
     table { width: 100%; background: transparent; }
     .path { font-family: var(--app-font-mono); font-size: 12px; }
     .err { color: var(--app-bad); font: var(--app-text-xs); }
+    .item { padding-top: var(--app-space-2); padding-bottom: var(--app-space-2); }
+    .item .path { overflow-wrap: anywhere; margin: var(--app-space-1) 0; }
+    .line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--app-space-2); }
+    .meta { color: var(--app-muted); font: var(--app-text-xs); }
   `,
 })
 export class RestoresPage implements OnInit {
@@ -31,7 +36,11 @@ export class RestoresPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
 
   protected readonly rows = signal<Restore[]>([]);
-  protected readonly columns = ['id', 'provider', 'remote', 'destination', 'status', 'size', 'requested'];
+  private readonly phone = phoneWidth();
+  /** Under 600 px each restore is one stacked cell. */
+  protected readonly columns = computed(() =>
+    this.phone() ? ['item'] : ['id', 'provider', 'remote', 'destination', 'status', 'size', 'requested'],
+  );
   protected readonly bytes = bytes;
   protected readonly when = when;
   protected readonly asProvider = (p: string) => p as ProviderId;
