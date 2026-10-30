@@ -10,7 +10,7 @@ const docs = join(here, '..', '..', 'docs');
 if (!existsSync(join(build, 'index.html'))) throw new Error(`no demo build at ${build}`);
 
 // replace the previous demo, but keep docs/ folders that aren't the demo (docs/refactor: screenshots)
-const KEEP = new Set(['refactor', 'gate-diff.md']);
+const KEEP = new Set(['refactor', 'mobile', 'gate-diff.md']);
 mkdirSync(docs, { recursive: true });
 for (const name of readdirSync(docs)) if (!KEEP.has(name)) rmSync(join(docs, name), { recursive: true, force: true });
 cpSync(build, docs, { recursive: true });
