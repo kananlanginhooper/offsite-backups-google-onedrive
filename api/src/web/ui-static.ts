@@ -5,7 +5,8 @@ import { join, resolve } from 'node:path';
 
 /**
  * Serves the built Angular UI. index.html gets <base href> = UI_BASE_PATH at request time, so one
- * build works at /, behind a path prefix, or on a subdomain.
+ * build works at /, behind a path prefix, or on a subdomain. index.html is never cached, so a new
+ * deploy shows at once (also inside the dashboard shell's frame); the hashed bundles it names are.
  */
 export function serveUi(
   server: Express,
@@ -20,9 +21,20 @@ export function serveUi(
     /<base href="[^"]*"\s*\/?>/,
     `<base href="${basePath}">`,
   );
-  server.use(express.static(dist, { index: false }));
+  server.use(
+    express.static(dist, {
+      index: false,
+      setHeaders: (res, path) =>
+        res.setHeader(
+          'Cache-Control',
+          /-[A-Z0-9]{8}\.(js|css)$/.test(path)
+            ? 'public, max-age=31536000, immutable'
+            : 'no-cache',
+        ),
+    }),
+  );
   server.get(/^(?!\/api(\/|$)).*/, (_req: Request, res: Response) => {
-    res.type('html').send(index);
+    res.set('Cache-Control', 'no-cache').type('html').send(index);
   });
   return true;
 }
