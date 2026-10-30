@@ -1,15 +1,17 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatTabsModule } from '@angular/material/tabs';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs';
 
-/** App title plus a Material tab link per screen. */
+/** App title plus a Material tab link per screen. The strip scrolls by finger (no paging arrows). */
 @Component({
   selector: 'app-nav-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatTabsModule, RouterLink, RouterLinkActive],
   template: `
     <span class="brand">Offsite backups</span>
-    <nav mat-tab-nav-bar [tabPanel]="panel" mat-stretch-tabs="false" mat-align-tabs="start">
+    <nav mat-tab-nav-bar [tabPanel]="panel" [disablePagination]="true" mat-stretch-tabs="false" mat-align-tabs="start">
       @for (s of screens; track s.path) {
         <a mat-tab-link [routerLink]="s.path" routerLinkActive #rla="routerLinkActive" [active]="rla.isActive">{{
           s.title
@@ -34,7 +36,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       :host { padding: 0 var(--app-space-2); }
       .brand { display: none; }
       nav { --mat-tab-header-label-text-size: 14px; }
-      nav .mdc-tab { padding: 0 12px; min-width: 0; }
+      nav .mdc-tab { padding: 0 12px; min-width: 44px; }
     }
     nav {
       flex: 1 1 auto;
@@ -46,6 +48,24 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `,
 })
 export class NavBar {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // keep the current screen's tab in view after each navigation
+    inject(Router)
+      .events.pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe(() =>
+        requestAnimationFrame(() => {
+          const links = [...this.host.nativeElement.querySelectorAll<HTMLElement>('a[mat-tab-link]')];
+          const i = this.screens.findIndex((s) => location.pathname.endsWith(`/${s.path}`));
+          links[i]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }),
+      );
+  }
+
   protected readonly screens = [
     { path: 'overview', title: 'Overview' },
     { path: 'copies', title: 'Copies' },
