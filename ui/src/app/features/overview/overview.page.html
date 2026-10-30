@@ -1,3 +1,17 @@
+@if (needSignIn().length) {
+  <section class="signin">
+    <h3><mat-icon>login</mat-icon> Sign-in needed</h3>
+    <p>Nothing is copied to a provider until it is signed in. The provider's sign-in page opens in a new tab.</p>
+    <div class="buttons">
+      @for (p of needSignIn(); track p.id) {
+        <button mat-flat-button (click)="connect(p)">
+          <mat-icon>login</mat-icon> Sign in to {{ p.label }}
+        </button>
+      }
+    </div>
+  </section>
+}
+
 <section class="providers">
   @for (p of providers(); track p.id) {
     <app-provider-card

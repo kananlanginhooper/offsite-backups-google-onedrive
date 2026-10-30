@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { OffsiteData } from '../../core/data/offsite-data';
@@ -18,7 +20,7 @@ const STALE_MS = 6 * 3_600_000;
 @Component({
   selector: 'app-overview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProviderCard, StatTile, ProviderChip, DailyChart],
+  imports: [MatButtonModule, MatIconModule, ProviderCard, StatTile, ProviderChip, DailyChart],
   templateUrl: './overview.page.html',
   styleUrl: './overview.page.scss',
 })
@@ -34,6 +36,10 @@ export class OverviewPage implements OnInit {
   protected readonly loaded = signal(false);
 
   protected readonly allFiles = computed(() => this.totals().reduce((n, t) => n + t.files, 0));
+  /** Remotes that are signed out or not set up yet: shown first, with a Sign in button each. */
+  protected readonly needSignIn = computed(() =>
+    this.providers().filter((p) => p.remote && /^(Signed out|Not signed in)/.test(p.lastError?.reason ?? '')),
+  );
   protected readonly allBytes = computed(() => this.totals().reduce((n, t) => n + t.bytes, 0));
   protected readonly bytes = bytes;
   protected readonly count = count;

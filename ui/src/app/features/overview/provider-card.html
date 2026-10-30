@@ -4,7 +4,7 @@
     @if (provider().remote) {
       @if (signedOut()) {
         <button mat-flat-button [disabled]="checking()" (click)="connect.emit()" title="Sign this remote in">
-          <mat-icon>login</mat-icon> Sign in
+          <mat-icon>login</mat-icon> Sign in to {{ provider().label }}
         </button>
       } @else {
         <button mat-button [disabled]="checking()" (click)="connect.emit()" title="Sign in again, e.g. to renew the sign-in">
