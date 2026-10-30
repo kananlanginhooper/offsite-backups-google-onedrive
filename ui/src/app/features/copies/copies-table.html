@@ -24,6 +24,15 @@
     <td mat-cell *matCellDef="let c" class="hash" [matTooltip]="c.hash">{{ c.hash.slice(0, 12) }}</td>
   </ng-container>
 
+  <ng-container matColumnDef="item">
+    <th mat-header-cell *matHeaderCellDef>Copy</th>
+    <td mat-cell *matCellDef="let c" class="item">
+      <app-provider-chip [provider]="c.provider" />
+      <div class="wrap">{{ c.remotePath }}</div>
+      <div class="meta">{{ bytes(c.size) }} · verified {{ when(c.verifiedAt) }}</div>
+    </td>
+  </ng-container>
+
   <ng-container matColumnDef="actions">
     <th mat-header-cell *matHeaderCellDef></th>
     <td mat-cell *matCellDef="let c">
@@ -35,6 +44,6 @@
     </td>
   </ng-container>
 
-  <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
-  <tr mat-row *matRowDef="let row; columns: columns"></tr>
+  <tr mat-header-row *matHeaderRowDef="columns(); sticky: true"></tr>
+  <tr mat-row *matRowDef="let row; columns: columns()"></tr>
 </table>

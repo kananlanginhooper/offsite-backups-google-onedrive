@@ -29,6 +29,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       border-bottom: 1px solid var(--app-line);
     }
     .brand { font: var(--app-text-lg); margin-right: var(--app-space-3); white-space: nowrap; }
+    /* phones: the dashboard shell names the tab already, so every screen's tab fits instead */
+    @media (max-width: 600px) {
+      :host { padding: 0 var(--app-space-2); }
+      .brand { display: none; }
+      nav { --mat-tab-header-label-text-size: 14px; }
+      nav .mdc-tab { padding: 0 12px; min-width: 0; }
+    }
     nav {
       flex: 1 1 auto;
       min-width: 0;

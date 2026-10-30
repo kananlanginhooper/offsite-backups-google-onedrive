@@ -50,8 +50,23 @@ import type { ConnectResult, ConnectStart, Provider } from '../../core/models';
             address bar and paste it here:
             <mat-form-field appearance="outline" class="url">
               <mat-label>Address of the page that didn't load</mat-label>
-              <input matInput [(ngModel)]="pasted" [disabled]="busy()" (keyup.enter)="finish()" />
+              <textarea
+                matInput
+                rows="3"
+                inputmode="url"
+                autocapitalize="off"
+                autocomplete="off"
+                spellcheck="false"
+                [(ngModel)]="pasted"
+                [disabled]="busy()"
+                (keydown.enter)="$event.preventDefault(); finish()"
+              ></textarea>
             </mat-form-field>
+            @if (canPaste) {
+              <button mat-stroked-button type="button" [disabled]="busy()" (click)="paste()">
+                <mat-icon>content_paste</mat-icon> Paste
+              </button>
+            }
           </li>
         </ol>
       }
@@ -78,6 +93,7 @@ import type { ConnectResult, ConnectStart, Provider } from '../../core/models';
   styles: `
     ol { padding-left: 1.2rem; display: grid; gap: 1rem; }
     .url { width: 100%; margin-top: .5rem; }
+    .url textarea { word-break: break-all; }
     .muted { opacity: .7; font-size: .875rem; margin-top: .25rem; }
     code { word-break: break-all; }
     .ok, .error { display: flex; gap: .5rem; align-items: center; }
@@ -94,6 +110,8 @@ export class ConnectDialog implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected pasted = '';
+  /** The clipboard can be read only on https or localhost, so the button shows only there. */
+  protected readonly canPaste = typeof navigator.clipboard?.readText === 'function';
 
   ngOnInit() {
     this.ref.disableClose = false;
@@ -109,6 +127,14 @@ export class ConnectDialog implements OnInit {
       this.error.set(message(e));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  protected async paste() {
+    try {
+      this.pasted = (await navigator.clipboard.readText()).trim();
+    } catch {
+      // the browser refused: long-press the box and paste instead
     }
   }
 
