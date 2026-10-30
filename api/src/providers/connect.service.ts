@@ -27,6 +27,8 @@ const BACKEND: Record<RemoteProvider, string> = {
   onedrive: 'onedrive',
 };
 const WAIT_MS = 15_000;
+/** How long rclone may take to swap the code for a token after the helper got it. */
+const EXCHANGE_MS = 120_000;
 const SESSION_MS = 10 * 60_000;
 
 interface Token {
@@ -151,15 +153,32 @@ export class ConnectService {
       throw new BadRequestException(
         'That address is from a different or older sign-in. Start again.',
       );
-    await Promise.race([s.exited, new Promise((r) => setTimeout(r, WAIT_MS))]);
+    await Promise.race([
+      s.exited,
+      new Promise((r) => setTimeout(r, EXCHANGE_MS).unref()),
+    ]);
     const json = /--->\s*(\{[\s\S]*?\})\s*<---End paste/.exec(
       s.out + s.err,
     )?.[1];
+    const running = s.child.exitCode === null;
     this.stop();
-    if (!json)
-      throw new ServiceUnavailableException(
-        `rclone did not return a sign-in token: ${s.err.trim().slice(-300)}`,
+    if (!json) {
+      // stderr holds rclone's notices and errors, never the token (that goes to stdout)
+      this.log.warn(
+        `${id}: no token (${running ? `rclone still running after ${EXCHANGE_MS / 1000}s` : `rclone exit ${s.child.exitCode}`}): ${s.err.trim().slice(-2000)}`,
       );
+      const why = s.err
+        .split('\n')
+        .filter((l) => /error|fail|invalid/i.test(l))
+        .slice(-3)
+        .join(' ')
+        .trim();
+      throw new ServiceUnavailableException(
+        running
+          ? `rclone got the code but did not return a token within ${EXCHANGE_MS / 1000} seconds. Nothing was saved. Start again.`
+          : `rclone could not swap the code for a token: ${why || s.err.trim().slice(-300)} Nothing was saved. Start again.`,
+      );
+    }
     const token = JSON.parse(json) as Token;
 
     const remote = this.providers.remoteFor(id);
