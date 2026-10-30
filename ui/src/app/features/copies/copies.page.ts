@@ -80,7 +80,7 @@ export class CopiesPage implements OnInit {
   }
 
   async restore(copy: Copy) {
-    const ok = await firstValueFrom(this.dialog.open(RestoreDialog, { data: copy }).afterClosed());
+    const ok = await firstValueFrom(this.dialog.open(RestoreDialog, { data: copy, maxWidth: '95vw' }).afterClosed());
     if (!ok) return;
     try {
       const r = await this.data.restore(copy.id);

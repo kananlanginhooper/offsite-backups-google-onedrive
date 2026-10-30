@@ -15,6 +15,21 @@ table {
   white-space: nowrap;
 }
 
+.item {
+  padding-top: var(--app-space-2);
+  padding-bottom: var(--app-space-2);
+}
+
+.wrap {
+  margin: var(--app-space-1) 0;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--app-muted);
+  font: var(--app-text-xs);
+}
+
 .num {
   text-align: right;
   white-space: nowrap;

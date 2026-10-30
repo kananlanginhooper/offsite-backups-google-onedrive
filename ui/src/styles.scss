@@ -4,6 +4,32 @@
   --app-accent: light-dark(#2f6f5e, #7cc4ae);
 }
 
+// Phones (DASHBOARD-REQUIREMENTS 5a): no sideways page scroll, 44 px tap targets, 16 px inputs (so
+// iOS doesn't zoom in), and long values wrap.
+html,
+body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+  .mat-mdc-button-base:not(.mat-mdc-icon-button) {
+    min-height: 44px;
+  }
+
+  .mat-mdc-icon-button.mat-mdc-button-base {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+
+  input,
+  textarea,
+  select,
+  .mat-mdc-select {
+    font-size: 16px !important;
+  }
+}
+
 // Material Symbols as the mat-icon font
 .mat-icon {
   font-family: 'Material Symbols Outlined';

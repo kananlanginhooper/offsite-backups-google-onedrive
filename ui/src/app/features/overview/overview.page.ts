@@ -70,7 +70,7 @@ export class OverviewPage implements OnInit {
   /** Sign a remote in (or back in). On success the card shows the fresh space check. */
   async connect(p: Provider) {
     const done = await firstValueFrom(
-      this.dialog.open(ConnectDialog, { data: p, width: '36rem' }).afterClosed(),
+      this.dialog.open(ConnectDialog, { data: p, width: '36rem', maxWidth: '95vw' }).afterClosed(),
     );
     if (done) this.providers.update((list) => list.map((x) => (x.id === p.id ? done.provider : x)));
   }
