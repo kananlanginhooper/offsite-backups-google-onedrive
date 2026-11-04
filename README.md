@@ -31,3 +31,6 @@ cd ui && npm run build:demo                                  # Pages demo -> doc
 ```
 
 All settings come from `.env` (see `.env.example`). `docker compose up -d --build` runs the API and UI as one container, published on the one IPv4 address in `BIND_ADDR`, on the shared external Docker network `homelab`, created once per host (`docker network create --subnet <shared subnet> homelab`). The rclone config folder is mounted writable, only so Sign in can save a new token.
+
+---
+Built by [Kanan Hooper](https://github.com/kananlanginhooper)
